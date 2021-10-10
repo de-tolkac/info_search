@@ -7,6 +7,7 @@
 #include <cmath>
 #include <algorithm>
 
+enum class calculateType { Count, Log };
 
 struct Document {
     std::map<std::string, double> map;
@@ -68,7 +69,7 @@ void printArticle(std::vector<std::vector<std::string>>& sentences, std::string 
     file.close();
 }
 
-void normalize(std::map<std::string, double>& vec, std::map<std::string, int>& countedWords, double totalDocuments) {
+void normalizeCount(std::map<std::string, double>& vec, std::map<std::string, int>& countedWords, double totalDocuments) {
     double norm = 0;
     for (auto& w : vec) {
         if (countedWords[w.first] != 0) {
@@ -85,9 +86,30 @@ void normalize(std::map<std::string, double>& vec, std::map<std::string, int>& c
     }
 }
 
-void normalizeDocuments(std::vector<Document>& documents, std::map<std::string, int>& countedWords, double totalDocuments) {
+void normalizeLog(std::map<std::string, double>& vec, std::map<std::string, int>& countedWords, double totalDocuments) {
+    double norm = 0;
+    for (auto& w : vec) {
+        if (countedWords[w.first] != 0) {
+            w.second = std::log(w.second + 1) * (totalDocuments / (double)countedWords[w.first]);
+            norm += w.second * w.second;
+        }
+    }
+
+    norm = std::sqrt(norm);
+    if (norm != 0) {
+        for (auto& w : vec) {
+            w.second /= norm;
+        }
+    }
+}
+
+void normalizeDocuments(std::vector<Document>& documents, std::map<std::string, int>& countedWords, double totalDocuments, calculateType type) {
     for (auto& d : documents) {
-        normalize(d.map, countedWords, totalDocuments);
+        if (type == calculateType::Count) {
+            normalizeCount(d.map, countedWords, totalDocuments);
+        } else {
+            normalizeLog(d.map, countedWords, totalDocuments);
+        }
     }
 }
 
@@ -131,7 +153,7 @@ void countWordsInDocuments(std::vector<std::vector<std::vector<std::string>>>& a
     }
 }
 
-void calculate(std::vector<std::string>& fact_raw, std::vector<Document>& documents, std::map<std::string, int>& countedWords, double totalDocuments, size_t fact_number) {
+void calculate(std::vector<std::string>& fact_raw, std::vector<Document>& documents, std::map<std::string, int>& countedWords, double totalDocuments, size_t fact_number, calculateType type) {
     std::vector<std::pair<double, size_t>> results;
     std::map<std::string, double> fact;
 
@@ -143,8 +165,11 @@ void calculate(std::vector<std::string>& fact_raw, std::vector<Document>& docume
         }
     }
 
-    normalize(fact, countedWords, totalDocuments);
-
+    if (type == calculateType::Count) {
+        normalizeCount(fact, countedWords, totalDocuments);
+    } else {
+        normalizeLog(fact, countedWords, totalDocuments);
+    }
     for (size_t i = 0; i < documents.size(); ++i) {
         results.push_back({dotProduct(fact, documents[i].map), i});
     }
@@ -153,6 +178,7 @@ void calculate(std::vector<std::string>& fact_raw, std::vector<Document>& docume
     });
 
     std::string path = "./output/";
+    path += (type == calculateType::Count) ? "count/" : "log/";
     path += std::to_string(fact_number);
     path += ".txt";
 
@@ -173,15 +199,13 @@ void calculate(std::vector<std::string>& fact_raw, std::vector<Document>& docume
 }
 
 int main() {
-    std::ofstream ff("test.txt");
-    
     std::vector<std::string> articlesFiles = {"article1.txt", "article2.txt", "article3.txt", "article4.txt", "article5.txt", "article6.txt"};
     const size_t articlesNumber = articlesFiles.size();
     lemmatize(articlesFiles);
 
     std::vector<std::string> facts[3];
     facts[0] = {"немецкий", "монахиня", "побеждать", "проказа", "в", "пакистан"};
-    facts[1]= {"с", "медов", "шифрование", "любой", "ключ", "казаться", "подходящий"};
+    facts[1]=  {"с", "медов", "шифрование", "любой", "ключ", "казаться", "подходящий"};
     facts[2] = {"российский", "промышленный", "турист", "часто", "все", "посещать", "завод", "пищевой", "промышленность"};
     const size_t factsNumber = 3;
     
@@ -198,12 +222,19 @@ int main() {
     std::map<std::string, int> countedWords;
     countWords(documents, countedWords);
 
+    std::vector<Document> documentsLog = documents;
     const size_t totalDocuments = documents.size();
-    normalizeDocuments(documents, countedWords, totalDocuments);
-    
+
+    // Count
+    normalizeDocuments(documents, countedWords, totalDocuments, calculateType::Count);
     for (size_t i = 0; i < factsNumber; ++i) {
-        calculate(facts[i], documents, countedWords, totalDocuments, i + 1);
+        calculate(facts[i], documents, countedWords, totalDocuments, i + 1, calculateType::Count);
     }
 
+    // Log
+    normalizeDocuments(documentsLog, countedWords, totalDocuments, calculateType::Log);
+    for (size_t i = 0; i < factsNumber; ++i) {
+        calculate(facts[i], documentsLog, countedWords, totalDocuments, i + 1, calculateType::Log);
+    }
     return 0;
 }
