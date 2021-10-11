@@ -73,7 +73,7 @@ void normalizeCount(std::map<std::string, double>& vec, std::map<std::string, in
     double norm = 0;
     for (auto& w : vec) {
         if (countedWords[w.first] != 0) {
-            w.second *= (totalDocuments / (double)countedWords[w.first]);
+            w.second *= std::log((totalDocuments / (double)countedWords[w.first]));
             norm += w.second * w.second;
         }
     }
@@ -90,7 +90,7 @@ void normalizeLog(std::map<std::string, double>& vec, std::map<std::string, int>
     double norm = 0;
     for (auto& w : vec) {
         if (countedWords[w.first] != 0) {
-            w.second = std::log(w.second + 1) * (totalDocuments / (double)countedWords[w.first]);
+            w.second = std::log(w.second + 1) * std::log((totalDocuments / (double)countedWords[w.first]));
             norm += w.second * w.second;
         }
     }
@@ -170,6 +170,7 @@ void calculate(std::vector<std::string>& fact_raw, std::vector<Document>& docume
     } else {
         normalizeLog(fact, countedWords, totalDocuments);
     }
+    
     for (size_t i = 0; i < documents.size(); ++i) {
         results.push_back({dotProduct(fact, documents[i].map), i});
     }
