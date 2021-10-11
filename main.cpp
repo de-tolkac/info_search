@@ -14,7 +14,7 @@ struct Document {
     std::vector<std::string>* pointer;
 };
 
-bool lemmatize(std::vector<std::string>& files) {
+bool mystem(std::vector<std::string>& files) {
     for (const auto& f : files) {
         std::string cmd = "./mystem -clsd ./articles/";
         cmd += f;
@@ -199,15 +199,16 @@ void calculate(std::vector<std::string>& fact_raw, std::vector<Document>& docume
 }
 
 int main() {
-    std::vector<std::string> articlesFiles = {"article1.txt", "article2.txt", "article3.txt", "article4.txt", "article5.txt", "article6.txt"};
-    const size_t articlesNumber = articlesFiles.size();
-    lemmatize(articlesFiles);
-
     std::vector<std::string> facts[3];
     facts[0] = {"немецкий", "монахиня", "побеждать", "проказа", "в", "пакистан"};
     facts[1]=  {"с", "медов", "шифрование", "любой", "ключ", "казаться", "подходящий"};
     facts[2] = {"российский", "промышленный", "турист", "часто", "все", "посещать", "завод", "пищевой", "промышленность"};
     const size_t factsNumber = 3;
+
+    std::vector<std::string> articlesFiles = {"article1.txt", "article2.txt", "article3.txt", "article4.txt", "article5.txt", "article6.txt"};
+    const size_t articlesNumber = articlesFiles.size();
+
+    mystem(articlesFiles);
     
     std::vector<std::vector<std::vector<std::string>>> articles;
     articles.resize(articlesNumber);
